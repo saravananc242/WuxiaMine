@@ -1,4 +1,3 @@
-
 name: Mine Wuxia Keys
 
 on:
@@ -9,27 +8,19 @@ on:
 
 jobs:
   build:
-    name: Run tests on Windows (Java 1.8 + Firefox)
+    name: Run tests on Windows (Java 8 + Firefox)
     runs-on: windows-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Java 1.8 (Temurin)
+    - name: Set up Java 8 (Temurin)
       uses: actions/setup-java@v4
       with:
         distribution: temurin
-        java-version: '1.8'
-
-    - name: Cache Maven local repository
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
+        java-version: '8'
+        cache: maven
 
     - name: Ensure Firefox is installed
       run: |
