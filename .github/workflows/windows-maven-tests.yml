@@ -1,0 +1,69 @@
+name: Windows Maven Tests
+
+on:
+  schedule:
+    # Runs daily at 06:00 IST (00:30 UTC)
+    - cron: '30 0 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    name: Run tests on Windows (Java 1.8 + Firefox)
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Java 1.8 (Temurin)
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '1.8'
+
+    - name: Cache Maven local repository
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Ensure Firefox is installed
+      run: |
+        choco install firefox --yes
+
+    - name: Show Firefox and Java versions
+      run: |
+        firefox --version || echo "firefox not found"
+        java -version
+
+    - name: Run Maven tests
+      run: mvn -B clean test
+      env:
+        MAVEN_OPTS: -Xmx2G
+    # Upload reports as artifacts and set retention to 10 days (artifacts auto-delete after retention)
+    - name: Upload Extent Reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ExtentReports
+        path: Reports
+        retention-days: 10
+
+    - name: Upload Surefire / TestNG Reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: SurefireReports
+        path: target/surefire-reports
+        retention-days: 10
+
+    - name: Upload test-output
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: TestOutput
+        path: test-output
+        retention-days: 10
