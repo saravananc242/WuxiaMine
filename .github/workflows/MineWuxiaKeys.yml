@@ -1,0 +1,87 @@
+name: Mine Wuxia Keys
+
+on:
+  schedule:
+    # Runs daily at 06:00 IST (00:30 UTC)
+    - cron: '30 0 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    name: Run tests on Windows (Java 8 + Firefox)
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Try Temurin first, but allow this step to fail without failing the job.
+    - name: Set up Java 8 (Temurin) - try first
+      id: setup-temurin
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '8'
+        cache: maven
+      continue-on-error: true
+
+    # Quick verification whether Java is usable (allow failure so fallback can run)
+    - name: Verify java is installed
+      id: verify-java
+      run: java -version
+      continue-on-error: true
+
+    - name: Ensure Firefox is installed (Chocolatey)
+      shell: powershell
+      run: |
+        choco install firefox --yes
+        # try to identify installed firefox.exe and export it for other steps
+        $ff = Join-Path $env:ProgramFiles 'Mozilla Firefox\firefox.exe'
+        if (Test-Path $ff) {
+          Write-Host "Found firefox at $ff"
+          echo "FIREFOX_PATH=$ff" >> $Env:GITHUB_ENV
+        } else {
+          Write-Host "firefox not found at $ff after install"
+        }
+
+    - name: Show Firefox and Java versions (bash)
+      shell: bash
+      run: |
+        # If FIREFOX_PATH provided by previous step, prefer that (Windows path with backslashes)
+        if [ -n "${FIREFOX_PATH:-}" ] && [ -x "$FIREFOX_PATH" ]; then
+          "$FIREFOX_PATH" --version
+        else
+          # Try invoking firefox from PATH; fallback to message if absent
+          firefox --version || echo "firefox not found"
+        fi
+        java -version
+
+    - name: Run Maven tests
+      run: mvn -B clean test
+      env:
+        MAVEN_OPTS: -Xmx2G
+
+    # Upload reports as artifacts and set retention to 10 days (artifacts auto-delete after retention)
+    - name: Upload Extent Reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ExtentReports
+        path: Reports
+        retention-days: 10
+
+    - name: Upload Surefire / TestNG Reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: SurefireReports
+        path: target/surefire-reports
+        retention-days: 10
+
+    - name: Upload test-output
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: TestOutput
+        path: test-output
+        retention-days: 10
