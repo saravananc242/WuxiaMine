@@ -20,7 +20,7 @@ import SrvnTestAuto.testComponents.BaseTest;
 public class MineKarma extends BaseTest {
 	private static Logger log;
 
-	@DataProvider
+	@DataProvider (name = "dataProvForUsers", parallel = true)
 	public Object[] dataProvForUsers() throws IOException {
 		log = LogManager.getLogger();
 		List<HashMap<String, String>> dataList = retrieveDataFromJson(
