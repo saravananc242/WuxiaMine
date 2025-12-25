@@ -3,7 +3,7 @@ name: Mine Wuxia Keys
 on:
   schedule:
     # Runs daily at 06:00 IST (00:30 UTC)
-    - cron: '30 0 * * *'
+    - cron: '30 23 * * *'
   workflow_dispatch: {}
 
 jobs:
